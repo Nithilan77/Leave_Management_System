@@ -21,3 +21,5 @@ build/
 
 # Testing
 coverage/
+
+server/.env
