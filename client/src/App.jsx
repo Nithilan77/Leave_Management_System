@@ -1,29 +1,28 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import ApplyLeave from './pages/ApplyLeave';
+import MyRequests from './pages/MyRequests';
 import ProtectedRoute from './components/ProtectedRoute';
 
 /**
  * App
  * ----
- * Defines the routes. Public: /login. Everything else is wrapped in
- * ProtectedRoute so only logged-in users can reach it.
+ * Route definitions. Public: /login. The employee pages are wrapped in
+ * ProtectedRoute so only logged-in users can reach them.
  *
- * More routes (apply, manager, hr) get added here as we build those pages.
+ * Manager (/manager) and HR (/hr) routes will be added by Muskan and Mohnish.
  */
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+
+        {/* Employee pages */}
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/apply" element={<ProtectedRoute><ApplyLeave /></ProtectedRoute>} />
+        <Route path="/my-requests" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
