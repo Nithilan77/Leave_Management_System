@@ -44,6 +44,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/leaves', require('./routes/leaveRoutes'));
 
+// Manager vertical (Muskan)
+app.use('/api/manager', require('./routes/managerRoutes'));
+
 // HR / Admin vertical (Mohnish)
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/leave-types', require('./routes/leaveTypeRoutes'));

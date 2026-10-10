@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import ApplyLeave from './pages/ApplyLeave';
 import MyRequests from './pages/MyRequests';
 import ProtectedRoute from './components/ProtectedRoute';
+import ApprovalQueue from './pages/manager/ApprovalQueue';
 import HRDashboard from './pages/hr/HRDashboard';
 import ManageUsers from './pages/hr/ManageUsers';
 import LeaveTypes from './pages/hr/LeaveTypes';
@@ -15,6 +16,8 @@ import Reports from './pages/hr/Reports';
  * Route definitions. Public: /login. The employee pages are wrapped in
  * ProtectedRoute so only logged-in users can reach them.
  *
+ * Manager (/manager) passes roles={['manager']}; HR pages (/hr/...) pass
+ * roles={['hr']} — the backend enforces the same rules with authorize().
  * HR pages (/hr/...) pass roles={['hr']} so only HR users can open them
  * (the backend enforces the same rule with authorize('hr')).
  *
@@ -30,6 +33,9 @@ function App() {
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/apply" element={<ProtectedRoute><ApplyLeave /></ProtectedRoute>} />
         <Route path="/my-requests" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />
+
+        {/* Manager pages */}
+        <Route path="/manager" element={<ProtectedRoute roles={['manager']}><ApprovalQueue /></ProtectedRoute>} />
 
         {/* HR pages */}
         <Route path="/hr" element={<ProtectedRoute roles={['hr']}><HRDashboard /></ProtectedRoute>} />
