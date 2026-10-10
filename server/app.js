@@ -42,8 +42,15 @@ app.get('/api/health', (req, res) => {
 
 // ---- Feature routes (mounted as we build them) ----
 app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/leaves', require('./routes/leaveRoutes'));
+
+// Manager vertical (Muskan)
+app.use('/api/manager', require('./routes/managerRoutes'));
+
+// HR / Admin vertical (Mohnish)
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/leave-types', require('./routes/leaveTypeRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 
 // ---- Error handling (MUST be last) ----
 app.use(notFound);       // 404 for unmatched routes
