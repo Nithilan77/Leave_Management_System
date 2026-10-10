@@ -18,6 +18,10 @@ import Reports from './pages/hr/Reports';
  *
  * Manager (/manager) passes roles={['manager']}; HR pages (/hr/...) pass
  * roles={['hr']} — the backend enforces the same rules with authorize().
+ * HR pages (/hr/...) pass roles={['hr']} so only HR users can open them
+ * (the backend enforces the same rule with authorize('hr')).
+ *
+ * Manager (/manager) routes will be added by Muskan.
  */
 function App() {
   return (
