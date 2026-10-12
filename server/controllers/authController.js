@@ -16,11 +16,13 @@ const generateToken = require('../utils/generateToken');
  * @access  Public
  *
  * Note: in a real org, HR usually creates accounts. We keep an open register
- * for development/testing convenience. You can later restrict role assignment
- * so users can't make themselves 'hr'.
+ * for development/testing convenience, but self-registration ALWAYS creates
+ * an 'employee' — role is never taken from the request body here. Promoting
+ * someone to manager/hr is an HR-only action (see userService.updateUser),
+ * which is the only path into those roles.
  */
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role, department, manager } = req.body;
+  const { name, email, password, department, manager } = req.body;
 
   // Basic presence check (deeper validation added later with express-validator)
   if (!name || !email || !password) {
@@ -40,7 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    role,        // optional; defaults to 'employee' if omitted
+    role: 'employee',   // hardcoded — never trust role from a public request body
     department,
     manager,
   });

@@ -3,6 +3,7 @@ const LeaveRequest = require('../models/LeaveRequest');
 const LeaveBalance = require('../models/LeaveBalance');
 const LeaveType = require('../models/LeaveType');
 const AuditLog = require('../models/AuditLog');
+const User = require('../models/User');
 const calculateLeaveDays = require('../utils/calculateLeaveDays');
 
 /**
@@ -167,6 +168,26 @@ const cancelLeaveRequest = async (userId, requestId) => {
 };
 
 /**
+ * Get the pending (or all, if status passed) leave requests for everyone who
+ * reports to this manager. Used by the Manager vertical's approval queue.
+ *
+ * `status` is optional — pass null to see the full team history, or
+ * 'PENDING' (the default on the route) for just the actionable queue.
+ */
+const getTeamRequests = async (managerId, status = 'PENDING') => {
+  const teamIds = await User.find({ manager: managerId }).distinct('_id');
+
+  const query = { employee: { $in: teamIds } };
+  if (status) query.status = status;
+
+  return LeaveRequest.find(query)
+    .populate('employee', 'name email department')
+    .populate('leaveType', 'name')
+    .populate('reviewedBy', 'name role')
+    .sort({ createdAt: -1 });
+};
+
+/**
  * Approve a leave request (SHARED with the Manager vertical).
  * Deducts the days from the employee's balance and logs it.
  * Muskan's approval controller will call THIS so the deduction logic isn't
@@ -174,8 +195,9 @@ const cancelLeaveRequest = async (userId, requestId) => {
  *
  * @param reviewerId - the manager/HR user approving
  */
-const approveLeaveRequest = async (reviewerId, requestId, comment = '') => {
-  const request = await LeaveRequest.findById(requestId);
+const approveLeaveRequest = async (reviewer, requestId, comment = '') => {
+  const reviewerId = reviewer._id || reviewer;
+  const request = await LeaveRequest.findById(requestId).populate('employee', 'manager');
   if (!request) {
     const err = new Error('Leave request not found');
     err.statusCode = 404;
@@ -186,10 +208,20 @@ const approveLeaveRequest = async (reviewerId, requestId, comment = '') => {
     err.statusCode = 400;
     throw err;
   }
+  if (
+    reviewer.role === 'manager' &&
+    String(request.employee.manager) !== String(reviewerId)
+  ) {
+    const err = new Error('You can only approve requests from your own team');
+    err.statusCode = 403;
+    throw err;
+  }
 
-  // Deduct from balance
+  // Deduct from balance. request.employee is populated above (for the team
+  // check), so use its _id — passing the populated doc itself would break
+  // the query.
   const balance = await LeaveBalance.findOne({
-    user: request.employee,
+    user: request.employee._id,
     leaveType: request.leaveType,
   });
   if (!balance || balance.total - balance.used < request.days) {
@@ -219,8 +251,9 @@ const approveLeaveRequest = async (reviewerId, requestId, comment = '') => {
  * Reject a leave request (SHARED with the Manager vertical).
  * No balance change (nothing was deducted while pending). Logs the rejection.
  */
-const rejectLeaveRequest = async (reviewerId, requestId, comment = '') => {
-  const request = await LeaveRequest.findById(requestId);
+const rejectLeaveRequest = async (reviewer, requestId, comment = '') => {
+  const reviewerId = reviewer._id || reviewer;
+  const request = await LeaveRequest.findById(requestId).populate('employee', 'manager');
   if (!request) {
     const err = new Error('Leave request not found');
     err.statusCode = 404;
@@ -229,6 +262,14 @@ const rejectLeaveRequest = async (reviewerId, requestId, comment = '') => {
   if (request.status !== 'PENDING') {
     const err = new Error(`Only PENDING requests can be rejected (this is ${request.status})`);
     err.statusCode = 400;
+    throw err;
+  }
+  if (
+    reviewer.role === 'manager' &&
+    String(request.employee.manager) !== String(reviewerId)
+  ) {
+    const err = new Error('You can only reject requests from your own team');
+    err.statusCode = 403;
     throw err;
   }
 
@@ -253,6 +294,7 @@ module.exports = {
   getMyLeaveRequests,
   getMyBalances,
   cancelLeaveRequest,
+  getTeamRequests,
   approveLeaveRequest,
   rejectLeaveRequest,
 };
