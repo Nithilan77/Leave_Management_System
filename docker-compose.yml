@@ -1,0 +1,34 @@
+# Leave Management System — local/dev orchestration.
+# MongoDB is NOT containerized here — both services connect to Atlas
+# (cloud) via MONGO_URI. Set the real values in a .env file next to this
+# file (see .env.compose.example) before running `docker compose up`.
+ 
+services:
+  server:
+    build:
+      context: ./server
+    container_name: lms-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      CLIENT_URL: ${CLIENT_URL}
+
+  client:
+    build:
+      context: ./client
+      args:
+        # Baked in at build time — must point at wherever `server` is reachable
+        # from the BROWSER (not the docker network), e.g. http://localhost:5000/api.
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: lms-client
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - server

@@ -24,7 +24,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.5.0",
     "mongodb-memory-server": "^11.2.0",
-    "mongoose": "^8.5.1"
+    "mongoose": "^8.5.1",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",
