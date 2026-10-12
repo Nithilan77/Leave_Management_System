@@ -1,4 +1,4 @@
-# Leave Management System (LMS)
+# Leave Management System
 
 A production-quality MERN-stack application that digitizes how an
 organization handles employee leave: employees apply online, managers
