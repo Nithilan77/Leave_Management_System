@@ -287,19 +287,3 @@ Set `VITE_API_URL` on Vercel to the deployed API's `/api` URL, and `CLIENT_URL`
 on Render to the deployed Vercel URL (for CORS).
 
 ---
-
-## Security Notes
-
-- Passwords hashed with bcrypt — never stored in plain text
-- JWT secret and DB credentials live only in `.env` (git-ignored); only
-  `.env.example` / `env.compose.example` (placeholders) are committed
-- RBAC enforced on the backend on every protected route — the frontend is
-  never trusted for authorization
-- Every leave state change is written to the audit trail
-
-## Next Steps (ideas for further work)
-
-- Email notifications on submit/approve/reject (Nodemailer)
-- Escalation job for leave requests pending too long
-- Team leave calendar view
-- Post-leave feedback/comments thread
