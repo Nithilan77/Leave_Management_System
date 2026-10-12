@@ -34,7 +34,8 @@ const ApprovalQueue = () => {
   const [error, setError] = useState('');
   const [actingId, setActingId] = useState(null);
 
-  const [rejectTarget, setRejectTarget] = useState(null);
+  // Reject dialog state
+  const [rejectTarget, setRejectTarget] = useState(null); // request being rejected
   const [rejectComment, setRejectComment] = useState('');
   const [rejectError, setRejectError] = useState('');
 
