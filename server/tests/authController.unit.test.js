@@ -52,23 +52,24 @@ describe('authController.registerUser', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  /**
-   * SECURITY FINDING (not a bug I introduced — this is how the code you
-   * uploaded already works, and the controller's own comment flags it as
-   * a known gap: "You can later restrict role assignment so users can't
-   * make themselves 'hr'"). This test documents the current, risky
-   * behavior rather than silently assuming it's fine.
+    /**
+   * SECURITY FIX VERIFICATION — this used to be exploitable: a self-
+   * registering user could set role: 'hr' in the request body and grant
+   * themselves admin rights. Fixed in authController by hardcoding
+   * role: 'employee' and ignoring whatever the client sends. This test
+   * proves the fix holds, rather than just trusting the diff.
    */
-  test('[KNOWN ISSUE] currently lets a self-registering user set their own role to hr', async () => {
+  test('ignores any role sent by the client and always registers as employee, even role: hr', async () => {
     User.findOne.mockResolvedValue(null);
     User.create.mockImplementation((data) => Promise.resolve({ _id: 'u1', ...data }));
     const req = { body: { name: 'Attacker', email: 'attacker@test.com', password: 'secret123', role: 'hr' } };
     const res = makeRes();
     const next = jest.fn();
     await registerUser(req, res, next);
-    expect(User.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'hr' }));
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ user: expect.objectContaining({ role: 'hr' }) }));
+    expect(User.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'employee' }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ user: expect.objectContaining({ role: 'employee' }) }));
   });
+
 });
 
 describe('authController.loginUser', () => {

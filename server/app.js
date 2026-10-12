@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 /**
@@ -39,6 +41,9 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ---- API docs (Swagger UI) ----
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ---- Feature routes (mounted as we build them) ----
 app.use('/api/auth', require('./routes/authRoutes'));

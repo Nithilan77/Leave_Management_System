@@ -25,7 +25,7 @@ const Layout = ({ children, nav = [] }) => {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ fontWeight: 600, mr: 4 }}>
-            LMS
+            Leave Management System
           </Typography>
 
           {/* Navigation links */}
