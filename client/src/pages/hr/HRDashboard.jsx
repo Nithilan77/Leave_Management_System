@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField, MenuItem, CircularProgress, Alert,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts';
 import api from '../../api/axios';
 import Layout from '../../components/Layout';
 import { hrNav } from '../../components/hrNav';
@@ -13,15 +17,15 @@ import { hrNav } from '../../components/hrNav';
  * The HR home page (/hr). Loads four reports in parallel:
  *   GET /api/reports/summary         -> headline numbers
  *   GET /api/reports/monthly?year=   -> approved days per month (bar chart)
- *   GET /api/reports/by-leave-type   -> table
- *   GET /api/reports/by-department   -> table
- *
- * The bar chart is plain MUI Boxes (height = share of the busiest month), so
- * we don't need a charting library for one simple chart.
+ *   GET /api/reports/by-leave-type   -> table + pie chart
+ *   GET /api/reports/by-department   -> table + bar chart
  */
 
 const currentYear = new Date().getFullYear();
 const YEARS = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
+
+// Brand-neutral categorical palette (swap for your brand's colors if you have one).
+const PALETTE = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
 const Stat = ({ label, value, hint }) => (
   <Card sx={{ boxShadow: 2 }}>
@@ -41,6 +45,18 @@ const HeadRow = ({ cols }) => (
       ))}
     </TableRow>
   </TableHead>
+);
+
+const ChartCard = ({ title, action, children, height = 280 }) => (
+  <Card sx={{ boxShadow: 2 }}>
+    <CardContent>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6">{title}</Typography>
+        {action}
+      </Box>
+      <Box sx={{ width: '100%', height }}>{children}</Box>
+    </CardContent>
+  </Card>
 );
 
 const HRDashboard = () => {
@@ -80,7 +96,11 @@ const HRDashboard = () => {
       .catch(() => setMonthly([]));
   }, [year]);
 
-  const maxDays = Math.max(1, ...monthly.map((m) => m.days));
+  // Only chart leave types that have any approved days, so the pie isn't
+  // cluttered with zero-slices.
+  const typePieData = byType
+    .filter((r) => r.approvedDays > 0)
+    .map((r) => ({ name: r.name, value: r.approvedDays }));
 
   return (
     <Layout nav={hrNav}>
@@ -122,10 +142,10 @@ const HRDashboard = () => {
       )}
 
       {/* Monthly approved days */}
-      <Card sx={{ boxShadow: 2, mb: 4 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Approved leave days by month</Typography>
+      <Box sx={{ mb: 4 }}>
+        <ChartCard
+          title="Approved leave days by month"
+          action={(
             <TextField
               select
               size="small"
@@ -136,28 +156,66 @@ const HRDashboard = () => {
             >
               {YEARS.map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
             </TextField>
-          </Box>
+          )}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthly} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
+              <Tooltip
+                formatter={(value, name, props) => [`${value} day(s)`, `${props.payload.requests} request(s)`]}
+              />
+              <Bar dataKey="days" fill={PALETTE[0]} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 180 }}>
-            {monthly.map((m) => (
-              <Tooltip key={m.month} title={`${m.days} day(s) across ${m.requests} request(s)`}>
-                <Box sx={{ flex: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">{m.days || ''}</Typography>
-                  <Box
-                    sx={{
-                      height: `${(m.days / maxDays) * 140}px`,
-                      minHeight: m.days ? 4 : 0,
-                      bgcolor: 'primary.main',
-                      borderRadius: '4px 4px 0 0',
-                    }}
-                  />
-                  <Typography variant="caption">{m.label}</Typography>
-                </Box>
-              </Tooltip>
-            ))}
-          </Box>
-        </CardContent>
-      </Card>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, mb: 4 }}>
+        {/* Days taken by leave type - pie */}
+        <ChartCard title="Days taken by leave type">
+          {typePieData.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No approved leave yet.</Typography>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={typePieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={55}
+                  outerRadius={90}
+                  paddingAngle={2}
+                >
+                  {typePieData.map((entry, i) => (
+                    <Cell key={entry.name} fill={PALETTE[i % PALETTE.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => [`${value} day(s)`, 'Days taken']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
+        {/* Days taken by department - bar */}
+        <ChartCard title="Days taken by department">
+          {byDept.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No leave requests yet.</Typography>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={byDept} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="department" width={100} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value) => [`${value} day(s)`, 'Days taken']} />
+                <Bar dataKey="approvedDays" fill={PALETTE[1]} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+      </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
         {/* By leave type */}
