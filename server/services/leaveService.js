@@ -5,6 +5,8 @@ const LeaveType = require('../models/LeaveType');
 const AuditLog = require('../models/AuditLog');
 const User = require('../models/User');
 const calculateLeaveDays = require('../utils/calculateLeaveDays');
+const calculateWorkingDays = require('../utils/calculateLeaveDays');
+const emailService = require('./emailService');
 
 /**
  * leaveService
@@ -64,10 +66,17 @@ const applyForLeave = async (userId, { leaveTypeId, startDate, endDate, reason }
     throw err;
   }
 
-  // 2. Compute number of days requested
-  const days = calculateLeaveDays(startDate, endDate);
+  // 2. Compute number of days requested — WORKING days (weekends + India
+  // public holidays excluded), not raw calendar days. A request that falls
+  // entirely on a weekend/holiday (days === 0) is rejected with a clearer
+  // message than the generic "at least 1 day" one, since 0 isn't really
+  // "less than a day" from the employee's point of view — it's "there's
+  // nothing to deduct here".
+  const days = calculateWorkingDays(startDate, endDate);
   if (days < 1) {
-    const err = new Error('Leave must be at least 1 day');
+    const err = new Error(
+      'This date range has no working days in it (only weekends/holidays) — nothing to apply for'
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -106,6 +115,25 @@ const applyForLeave = async (userId, { leaveTypeId, startDate, endDate, reason }
     performedBy: userId,
     details: `Applied for ${days} day(s) of ${leaveType.name}`,
   });
+
+  // 6. Notify the employee's manager by email (best-effort — never let an
+  // email/lookup failure block the leave request itself from being created).
+  try {
+    const applicant = await User.findById(userId).populate('manager', 'name email');
+    if (applicant?.manager?.email) {
+      await emailService.notifyLeaveRequestSubmitted(applicant.manager.email, {
+        managerName: applicant.manager.name,
+        employeeName: applicant.name,
+        leaveTypeName: leaveType.name,
+        startDate,
+        endDate,
+        days,
+        reason,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send leave-request-submitted email:', err.message);
+  }
 
   return request;
 };
@@ -197,7 +225,7 @@ const getTeamRequests = async (managerId, status = 'PENDING') => {
  */
 const approveLeaveRequest = async (reviewer, requestId, comment = '') => {
   const reviewerId = reviewer._id || reviewer;
-  const request = await LeaveRequest.findById(requestId).populate('employee', 'manager');
+  const request = await LeaveRequest.findById(requestId).populate('employee', 'name email manager');
   if (!request) {
     const err = new Error('Leave request not found');
     err.statusCode = 404;
@@ -244,6 +272,25 @@ const approveLeaveRequest = async (reviewer, requestId, comment = '') => {
     details: comment || `Approved ${request.days} day(s)`,
   });
 
+  // Notify the employee by email (best-effort, see applyForLeave for why
+  // this is wrapped — a failed email must never undo an approval).
+  try {
+    if (request.employee?.email) {
+      const leaveType = await LeaveType.findById(request.leaveType);
+      await emailService.notifyLeaveReviewed(request.employee.email, {
+        employeeName: request.employee.name,
+        status: 'APPROVED',
+        leaveTypeName: leaveType?.name || 'leave',
+        startDate: request.startDate,
+        endDate: request.endDate,
+        days: request.days,
+        comment,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send leave-approved email:', err.message);
+  }
+
   return request;
 };
 
@@ -253,7 +300,7 @@ const approveLeaveRequest = async (reviewer, requestId, comment = '') => {
  */
 const rejectLeaveRequest = async (reviewer, requestId, comment = '') => {
   const reviewerId = reviewer._id || reviewer;
-  const request = await LeaveRequest.findById(requestId).populate('employee', 'manager');
+  const request = await LeaveRequest.findById(requestId).populate('employee', 'name email manager');
   if (!request) {
     const err = new Error('Leave request not found');
     err.statusCode = 404;
@@ -284,6 +331,25 @@ const rejectLeaveRequest = async (reviewer, requestId, comment = '') => {
     performedBy: reviewerId,
     details: comment || 'Rejected',
   });
+
+  // Notify the employee by email (best-effort, see applyForLeave for why
+  // this is wrapped — a failed email must never undo a rejection).
+  try {
+    if (request.employee?.email) {
+      const leaveType = await LeaveType.findById(request.leaveType);
+      await emailService.notifyLeaveReviewed(request.employee.email, {
+        employeeName: request.employee.name,
+        status: 'REJECTED',
+        leaveTypeName: leaveType?.name || 'leave',
+        startDate: request.startDate,
+        endDate: request.endDate,
+        days: request.days,
+        comment,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send leave-rejected email:', err.message);
+  }
 
   return request;
 };

@@ -7,4 +7,5 @@ export const employeeNav = [
   { label: 'Dashboard', path: '/' },
   { label: 'Apply for Leave', path: '/apply' },
   { label: 'My Requests', path: '/my-requests' },
+  { label: 'Holiday Calendar', path: '/calendar' },
 ];

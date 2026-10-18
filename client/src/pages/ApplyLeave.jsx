@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   Card, CardContent, Typography, TextField, Button, MenuItem,
   Alert, CircularProgress, Box,
 } from '@mui/material';
 import api from '../api/axios';
 import Layout from '../components/Layout';
-import { employeeNav } from '../components/employeeNav';
+import { navForRole } from '../components/navForRole';
 
 /**
  * Apply for Leave
@@ -24,7 +25,9 @@ const ApplyLeave = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [workingDays, setWorkingDays] = useState(null);
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
 
   // Load the employee's leave types (from their balances).
   useEffect(() => {
@@ -32,7 +35,7 @@ const ApplyLeave = () => {
       try {
         const res = await api.get('/leaves/me/balances');
         // Map balances to {id, name} for the dropdown.
-        const types = res.data.balances
+        const types = (res.data.balances || [])
           .filter((b) => b.leaveType)
           .map((b) => ({ id: b.leaveType._id, name: b.leaveType.name }));
         setLeaveTypes(types);
@@ -42,6 +45,47 @@ const ApplyLeave = () => {
     };
     load();
   }, []);
+
+  // Live preview: how many WORKING days (weekends + public holidays excluded)
+  // the chosen range actually costs, mirroring the backend's
+  // calculateWorkingDays — fetched fresh per distinct year in range so it
+  // stays correct even across a year boundary (e.g. 30 Dec - 2 Jan).
+  useEffect(() => {
+    const { startDate, endDate } = form;
+    if (!startDate || !endDate || new Date(endDate) < new Date(startDate)) {
+      setWorkingDays(null);
+      return;
+    }
+    let cancelled = false;
+    const compute = async () => {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const years = new Set();
+      for (let y = start.getFullYear(); y <= end.getFullYear(); y += 1) years.add(y);
+
+      try {
+        const holidaySets = await Promise.all(
+          [...years].map((y) => api.get('/holidays', { params: { year: y } }))
+        );
+        const holidayDates = new Set(
+          holidaySets.flatMap((res) => res.data.holidays.map((h) => h.date))
+        );
+        let count = 0;
+        const cursor = new Date(start);
+        while (cursor <= end) {
+          const day = cursor.getDay();
+          const key = cursor.toISOString().slice(0, 10);
+          if (day !== 0 && day !== 6 && !holidayDates.has(key)) count += 1;
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        if (!cancelled) setWorkingDays(count);
+      } catch {
+        if (!cancelled) setWorkingDays(null);
+      }
+    };
+    compute();
+    return () => { cancelled = true; };
+  }, [form.startDate, form.endDate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -76,7 +120,7 @@ const ApplyLeave = () => {
   };
 
   return (
-    <Layout nav={employeeNav}>
+    <Layout nav={navForRole(user?.role)}>
       <Typography variant="h4" fontWeight={600} gutterBottom>
         Apply for Leave
       </Typography>
@@ -113,7 +157,7 @@ const ApplyLeave = () => {
               onChange={handleChange}
               fullWidth
               margin="normal"
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
               required
             />
 
@@ -125,10 +169,16 @@ const ApplyLeave = () => {
               onChange={handleChange}
               fullWidth
               margin="normal"
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
               required
             />
-
+            {workingDays !== null && (
+              <Alert severity={workingDays > 0 ? 'info' : 'warning'} sx={{ mt: 1, mb: 1 }}>
+                {workingDays > 0
+                  ? `This range is ${workingDays} working day${workingDays === 1 ? '' : 's'} (weekends & public holidays excluded).`
+                  : "This range has no working days in it (only weekends/holidays) — it won't be accepted."}
+              </Alert>
+            )}
             <TextField
               label="Reason"
               name="reason"

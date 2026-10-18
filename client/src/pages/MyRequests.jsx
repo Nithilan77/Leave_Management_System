@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Typography, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Chip, Button, CircularProgress, Alert, Box,
 } from '@mui/material';
 import api from '../api/axios';
 import Layout from '../components/Layout';
-import { employeeNav } from '../components/employeeNav';
+import { navForRole } from '../components/navForRole';
 
 /**
  * My Requests
@@ -31,6 +32,7 @@ const MyRequests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancelingId, setCancelingId] = useState(null);
+  const { user } = useSelector((state) => state.auth);
 
   const fetchRequests = async () => {
     try {
@@ -58,7 +60,7 @@ const MyRequests = () => {
   };
 
   return (
-    <Layout nav={employeeNav}>
+    <Layout nav={navForRole(user?.role)}>
       <Typography variant="h4" fontWeight={600} gutterBottom>
         My Leave Requests
       </Typography>

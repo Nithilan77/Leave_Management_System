@@ -14,16 +14,21 @@ import { loginUser, clearError } from '../store/slices/authSlice';
  * loginUser thunk. On success, redirects the user to the right home page based
  * on their role. Shows a loading spinner and any error from the backend.
  *
- * DEMO_ACCOUNTS below match server/seed.js exactly. Login is still just
+ * DEMO_ACCOUNTS below must match server/seed.js exactly. Login is still just
  * email + password under the hood — there's no separate "login as role"
  * mechanism, these cards just pre-fill the real seeded credentials so you
  * can demo all three roles quickly without retyping. Remove DEMO_ACCOUNTS
  * (and the card row) before this ever points at a real database.
+ *
+ * NOTE: if you run seed.js with DEMO_MANAGER_EMAIL set (see server/.env.example
+ * — used so Resend's notification demo lands in a real inbox), the Manager
+ * card below won't match anymore. Either update the email here to whatever
+ * DEMO_MANAGER_EMAIL is set to, or just sign in manually for the manager role.
  */
 const DEMO_ACCOUNTS = [
-  { role: 'Employee', email: 'ABC@ssn.com', password: 'ABCDEF', color: 'primary' },
-  { role: 'Manager', email: 'manager_1@ssn.com', password: 'MANAGER', color: 'secondary' },
-  { role: 'HR', email: 'hr_1@ssn.com', password: 'HR_ADMIN', color: 'success' },
+  { role: 'Employee', email: 'employee@ssn.com', password: '123', color: 'primary' },
+  { role: 'Manager', email: 'nithilan7437@gmail.com', password: '123', color: 'secondary' },
+  { role: 'HR', email: 'hr@ssn.com', password: '123', color: 'success' },
 ];
 
 const Login = () => {
