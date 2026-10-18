@@ -56,6 +56,7 @@ app.use('/api/manager', require('./routes/managerRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/leave-types', require('./routes/leaveTypeRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/holidays', require('./routes/holidayRoutes'));
 
 // ---- Error handling (MUST be last) ----
 app.use(notFound);       // 404 for unmatched routes

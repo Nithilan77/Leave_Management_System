@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   Grid, Card, CardContent, Typography, Box, Button,
   CircularProgress, Alert, LinearProgress,
 } from '@mui/material';
 import api from '../api/axios';
 import Layout from '../components/Layout';
-import { employeeNav } from '../components/employeeNav';
+import { navForRole } from '../components/navForRole';
 
 /**
  * Employee Dashboard
@@ -20,6 +21,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const fetchBalances = async () => {
@@ -36,7 +38,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <Layout nav={employeeNav}>
+    <Layout nav={navForRole(user?.role)}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={600}>My Leave Balances</Typography>
         <Button variant="contained" onClick={() => navigate('/apply')}>

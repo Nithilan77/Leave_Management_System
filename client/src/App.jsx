@@ -9,6 +9,8 @@ import HRDashboard from './pages/hr/HRDashboard';
 import ManageUsers from './pages/hr/ManageUsers';
 import LeaveTypes from './pages/hr/LeaveTypes';
 import Reports from './pages/hr/Reports';
+import Approvals from './pages/hr/Approvals';
+import HolidayCalendar from './pages/HolidayCalendar';
 
 /**
  * App
@@ -33,12 +35,14 @@ function App() {
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/apply" element={<ProtectedRoute><ApplyLeave /></ProtectedRoute>} />
         <Route path="/my-requests" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><HolidayCalendar /></ProtectedRoute>} />
 
         {/* Manager pages */}
         <Route path="/manager" element={<ProtectedRoute roles={['manager']}><ApprovalQueue /></ProtectedRoute>} />
 
         {/* HR pages */}
         <Route path="/hr" element={<ProtectedRoute roles={['hr']}><HRDashboard /></ProtectedRoute>} />
+        <Route path="/hr/approvals" element={<ProtectedRoute roles={['hr']}><Approvals /></ProtectedRoute>} />
         <Route path="/hr/users" element={<ProtectedRoute roles={['hr']}><ManageUsers /></ProtectedRoute>} />
         <Route path="/hr/leave-types" element={<ProtectedRoute roles={['hr']}><LeaveTypes /></ProtectedRoute>} />
         <Route path="/hr/reports" element={<ProtectedRoute roles={['hr']}><Reports /></ProtectedRoute>} />

@@ -23,4 +23,41 @@ const calculateLeaveDays = (startDate, endDate) => {
   return diff + 1; // +1 makes the range inclusive of both start and end
 };
 
+const { holidayDateSetForYear } = require('../data/indiaHolidays');
+
+const toDateKey = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const isWeekend = (date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+};
+
+const isHoliday = (date) => {
+  const year = date.getFullYear();
+  return holidayDateSetForYear(year).has(toDateKey(date));
+};
+
+const calculateWorkingDays = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  let workingDays = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    if (!isWeekend(cursor) && !isHoliday(cursor)) workingDays += 1;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return workingDays;
+};
+
 module.exports = calculateLeaveDays;
+module.exports.calculateWorkingDays = calculateWorkingDays;
+module.exports.isWeekend = isWeekend;
+module.exports.isHoliday = isHoliday;
