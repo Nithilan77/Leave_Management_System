@@ -78,7 +78,13 @@ const Login = () => {
       }}
     >
       <Box sx={{ width: '100%', maxWidth: 820 }}>
-        <Typography variant="h4" fontWeight={600} gutterBottom textAlign="center">
+                <Typography
+          variant="h4"
+          fontWeight={600}
+          gutterBottom
+          textAlign="center"
+          sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}
+        >
           Leave Management System
         </Typography>
         <Typography variant="body2" color="text.secondary" textAlign="center" mb={4}>
