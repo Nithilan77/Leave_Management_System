@@ -27,7 +27,7 @@ import { loginUser, clearError } from '../store/slices/authSlice';
  */
 const DEMO_ACCOUNTS = [
   { role: 'Employee', email: 'employee@ssn.com', password: '123', color: 'primary' },
-  { role: 'Manager', email: 'nithilan7437@gmail.com', password: '123', color: 'secondary' },
+  { role: 'Manager', email: 'manager@ssn.com', password: '123', color: 'secondary' },
   { role: 'HR', email: 'hr@ssn.com', password: '123', color: 'success' },
 ];
 
@@ -78,7 +78,7 @@ const Login = () => {
       }}
     >
       <Box sx={{ width: '100%', maxWidth: 820 }}>
-                <Typography
+        <Typography
           variant="h4"
           fontWeight={600}
           gutterBottom
